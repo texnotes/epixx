@@ -6,7 +6,7 @@ $xml = new SimpleXMLElement($xmlstr);
 
 //Соединяемся с БД
 $username = 'root';
-$password = 'sur40ebk1';
+$password = '*****';
 try {
     $conn = new PDO('mysql:host=localhost;dbname=epic_db', $username, $password);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
