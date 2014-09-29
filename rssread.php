@@ -1,0 +1,96 @@
+<?php
+
+//Получаем данные из ленты
+$xmlstr = file_get_contents('http://news.yandex.ru/travels.rss');
+$xml = new SimpleXMLElement($xmlstr);
+
+//Соединяемся с БД
+$username = 'root';
+$password = 'sur40ebk1';
+try {
+    $conn = new PDO('mysql:host=localhost;dbname=epic_db', $username, $password);
+    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+}
+catch(PDOException $e) {
+    echo 'ERROR: ' . $e->getMessage();
+}
+?>
+<html>
+    <head>
+        <meta charset="utf-8" />
+    </head>
+    <body>
+
+<?php
+$stack = [];
+
+//Прарсинг ленты новостей
+foreach ($xml->channel->item as $item) {
+    
+    $title = (string)$item->title;
+    $link = (string)$item->link;
+    $description = (string)$item->description;
+    
+    $pubDate = (string)$item->pubDate;
+    $date = new DateTime;
+    $date = $date->createFromFormat("d M Y H:i:s O", $pubDate);
+    
+    $tz = $date->getTimezone()->getName();
+    
+    // Часовой пояс, очевидно лучше хранить в таблице описывающей фид
+    
+    $dat_db = $date->format('Y-m-d H:i:s');
+    
+    echo '<div>' . '<a href="' . $link . '">' . $title . '</a>' . '</div>';
+    echo '<div>' . $dat_db . '</div>';
+    echo '<div>' . '<p>' . $description . '</p>' . '</div>';
+    
+    //Если в БД записи нет, то отправляем запись во временный масив(стек)
+    $stmt = $conn->prepare('SELECT id from yandex_db WHERE title = :title_db');
+    $stmt->setFetchMode(PDO::FETCH_ASSOC);
+    $title_db = $title;
+    $stmt->bindParam(':title_db', $title_db);
+    $stmt->execute();
+    if (!$row = $stmt->fetchAll()) {
+        array_push($stack, $title, $description, $link, $dat_db);
+    }
+}
+
+//print_r($stack);
+//В обратном порядке загоняем данные в БД
+while ($stack) {
+    $fort = array_pop($stack);
+    
+    $thre = array_pop($stack);
+    $two = array_pop($stack);
+    $one = array_pop($stack);
+    
+    $post = [':date' => $fort, ':link' => $thre, ':description' => $two, ':title' => $one, ];
+    $stmt = $conn->prepare("
+        INSERT into yandex_db (title, description, link, date)
+         VALUES(:title, :description, :link, :date)
+    ");
+    $stmt->execute($post);
+    
+    //Тест как работает стек
+    print_r($post);
+    
+    //    echo $one . ' 1=' . $two . ' 2=' . $thre . ' 3=' . $fort . '<br><br>';
+    
+}
+echo "---------------end of all---------------<br>";
+
+//Этот код нужно отправить в отдельный скрипт - вывод содержимого БД
+$stmt = $conn->prepare("
+    SELECT id, title, description FROM `yandex_db` ORDER BY id DESC
+");
+$stmt->execute();
+$posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+foreach ($posts as $post) {
+    echo $post['title'] . '<br>';
+}
+?>
+    </body>
+</html>
+
