@@ -1,0 +1,10 @@
+{% extends "layout.html.twig" %}
+
+{% block content %}
+    {% for post in posts %}
+        <h2><a href="/blog/web/post/{{ post.id }}">{{ post.title}}</a></h2>
+        <div>
+            {{ post.description }}
+        </div>
+    {% endfor %}
+{% endblock %}

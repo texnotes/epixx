@@ -1,0 +1,16 @@
+{% extends "layout.html.twig" %}
+
+{% block content %}
+    <h2>{{ post.title}}</h2>
+    <div>
+        {{ post.description }}
+    </div>
+    <br /><br /><br />
+    <ul>
+    {% for comment in comments %}
+        <li>
+            {{ comment.content }}
+        </li>
+    {% endfor %}
+    </ul>
+{% endblock %}
